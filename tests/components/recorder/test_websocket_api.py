@@ -16,6 +16,7 @@ from homeassistant.components.recorder.statistics import (
     list_statistic_ids,
     statistics_during_period,
 )
+from homeassistant.helpers import recorder as recorder_helper
 from homeassistant.setup import async_setup_component
 import homeassistant.util.dt as dt_util
 from homeassistant.util.unit_system import METRIC_SYSTEM
@@ -275,6 +276,7 @@ async def test_recorder_info(hass, hass_ws_client, recorder_mock):
         "backlog": 0,
         "max_backlog": 40000,
         "migration_in_progress": False,
+        "migration_is_live": False,
         "recording": True,
         "thread_running": True,
     }
@@ -297,6 +299,7 @@ async def test_recorder_info_bad_recorder_config(hass, hass_ws_client):
     client = await hass_ws_client()
 
     with patch("homeassistant.components.recorder.migration.migrate_schema"):
+        recorder_helper.async_initialize_recorder(hass)
         assert not await async_setup_component(
             hass, recorder.DOMAIN, {recorder.DOMAIN: config}
         )
@@ -338,9 +341,13 @@ async def test_recorder_info_migration_queue_exhausted(hass, hass_ws_client):
         "homeassistant.components.recorder.migration.migrate_schema",
         wraps=stalled_migration,
     ):
-        await async_setup_component(
-            hass, "recorder", {"recorder": {"db_url": "sqlite://"}}
+        recorder_helper.async_initialize_recorder(hass)
+        hass.create_task(
+            async_setup_component(
+                hass, "recorder", {"recorder": {"db_url": "sqlite://"}}
+            )
         )
+        await hass.data[recorder.DOMAIN]["db_connected"]
         hass.states.async_set("my.entity", "on", {})
         await hass.async_block_till_done()
 

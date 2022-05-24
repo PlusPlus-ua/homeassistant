@@ -18,7 +18,7 @@ from .statistics import (
     list_statistic_ids,
     validate_statistics,
 )
-from .util import async_migration_in_progress
+from .util import async_migration_in_progress, async_migration_is_live
 
 if TYPE_CHECKING:
     from . import Recorder
@@ -197,6 +197,7 @@ def ws_info(
 
     backlog = instance.backlog if instance else None
     migration_in_progress = async_migration_in_progress(hass)
+    migration_is_live = async_migration_is_live(hass)
     recording = instance.recording if instance else False
     thread_alive = instance.is_alive() if instance else False
 
@@ -204,6 +205,7 @@ def ws_info(
         "backlog": backlog,
         "max_backlog": MAX_QUEUE_BACKLOG,
         "migration_in_progress": migration_in_progress,
+        "migration_is_live": migration_is_live,
         "recording": recording,
         "thread_running": thread_alive,
     }
